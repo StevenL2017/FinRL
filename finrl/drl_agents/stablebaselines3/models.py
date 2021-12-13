@@ -114,7 +114,7 @@ class DRLAgent:
         actions_memory = []
         test_env.reset()
         for i in range(len(environment.df.index.unique())):
-            action, _states = model.predict(test_obs)
+            action, _states = model.predict(test_obs, deterministic=True)
             # account_memory = test_env.env_method(method_name="save_asset_memory")
             # actions_memory = test_env.env_method(method_name="save_action_memory")
             test_obs, rewards, dones, info = test_env.step(action)
@@ -144,7 +144,7 @@ class DRLAgent:
         episode_total_assets.append(environment.initial_total_asset)
         done = False
         while not done:
-            action = model.predict(state)[0]
+            action = model.predict(state, deterministic=True)[0]
             state, reward, done, _ = environment.step(action)
 
             total_asset = (
@@ -265,7 +265,7 @@ class DRLEnsembleAgent:
     def DRL_validation(self, model, test_data, test_env, test_obs):
         """validation process"""
         for i in range(len(test_data.index.unique())):
-            action, _states = model.predict(test_obs)
+            action, _states = model.predict(test_obs, deterministic=True)
             test_obs, rewards, dones, info = test_env.step(action)
 
     def DRL_prediction(
@@ -306,7 +306,7 @@ class DRLEnsembleAgent:
         trade_obs = trade_env.reset()
 
         for i in range(len(trade_data.index.unique())):
-            action, _states = model.predict(trade_obs)
+            action, _states = model.predict(trade_obs, deterministic=True)
             trade_obs, rewards, dones, info = trade_env.step(action)
             if i == (len(trade_data.index.unique()) - 2):
                 # print(env_test.render())

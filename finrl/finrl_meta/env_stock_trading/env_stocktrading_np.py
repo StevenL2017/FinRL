@@ -1,6 +1,8 @@
 import gym
 import numpy as np
 from numpy import random as rd
+import pandas as pd
+
 
 class StockTradingEnv(gym.Env):
     def __init__(
@@ -164,3 +166,40 @@ class StockTradingEnv(gym.Env):
             return 1 / (1 + np.exp(-x * np.e)) - 0.5
 
         return sigmoid(ary / thresh) * thresh
+
+    def _get_date(self, df):
+        if len(df.tic.unique()) > 1:
+            date = df.date.unique()
+        else:
+            date = df.date
+        return date
+
+    def save_asset_memory(self, df, asset):
+        date_list = self._get_date(df)
+        asset_list = asset
+        # print(len(date_list))
+        # print(len(asset_list))
+        df_account_value = pd.DataFrame(
+            {"date": date_list, "account_value": asset_list}
+        )
+        return df_account_value
+
+    def save_action_memory(self, df, action):
+        data = df.loc[0, :]
+        date_list = self._get_date(df)[:-1]
+        action_list = [
+            (act * self.max_stock).astype(int)
+            for act in action
+        ]
+        # print(len(date_list))
+        # print(len(action_list))
+        if len(df.tic.unique()) > 1:
+            df_date = pd.DataFrame(date_list)
+            df_date.columns = ["date"]
+
+            df_actions = pd.DataFrame(action_list)
+            df_actions.columns = data.tic.values
+            df_actions.index = df_date.date
+        else:
+            df_actions = pd.DataFrame({"date": date_list, "actions": action_list})
+        return df_actions
