@@ -76,6 +76,8 @@ class StockTradingEnv(gym.Env):
             low=-1, high=1, shape=(self.action_dim,), dtype=np.float32
         )
 
+        self.actions_memory = []
+
     def reset(self):
         self.day = 0
         price = self.price_ary[self.day]
@@ -97,6 +99,9 @@ class StockTradingEnv(gym.Env):
         self.total_asset = self.amount + (self.stocks * price).sum()
         self.initial_total_asset = self.total_asset
         self.gamma_reward = 0.0
+
+        self.actions_memory = []
+
         return self.get_state(price)  # state
 
     def step(self, actions):
@@ -116,6 +121,8 @@ class StockTradingEnv(gym.Env):
                         price[index] * sell_num_shares * (1 - self.sell_cost_pct)
                     )
                     self.stocks_cool_down[index] = 0
+
+                    actions[index] = sell_num_shares
             for index in np.where(actions > min_action)[0]:  # buy_index:
                 if (
                     price[index] > 0
@@ -127,10 +134,14 @@ class StockTradingEnv(gym.Env):
                     )
                     self.stocks_cool_down[index] = 0
 
+                    actions[index] = buy_num_shares
+
         else:  # sell all when turbulence
             self.amount += (self.stocks * price).sum() * (1 - self.sell_cost_pct)
             self.stocks[:] = 0
             self.stocks_cool_down[:] = 0
+
+        self.actions_memory.append(actions)
 
         state = self.get_state(price)
         total_asset = self.amount + (self.stocks * price).sum()
@@ -184,13 +195,10 @@ class StockTradingEnv(gym.Env):
         )
         return df_account_value
 
-    def save_action_memory(self, df, action):
+    def save_action_memory(self, df):
         data = df.loc[0, :]
         date_list = self._get_date(df)[:-1]
-        action_list = [
-            (act * self.max_stock).astype(int)
-            for act in action
-        ]
+        action_list = self.actions_memory
         # print(len(date_list))
         # print(len(action_list))
         if len(df.tic.unique()) > 1:
